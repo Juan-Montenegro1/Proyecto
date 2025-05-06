@@ -1,19 +1,20 @@
 import React, { useState } from 'react';
-import { User, Mail, Lock, Globe, Phone, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, Globe, Phone, Eye, EyeOff, User } from "lucide-react";
+import { useNavigate } from 'react-router-dom';
 
 const RegisterPage = () => {
   const [formData, setFormData] = useState({
     username: '',
-    email: '',
     password: '',
-    nombre: '',
-    apellidos: '',
-    pais: '',
-    telefono: '',
+    firstname: '',
+    lastname: '',
+    country: '',
+    numberPhone: '',
   });
 
   const [errors, setErrors] = useState({});
-  const [showPassword, setShowPassword] = useState(false); // 👁 Controla visibilidad
+  const [showPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate();
 
   const validate = () => {
     const newErrors = {};
@@ -22,24 +23,24 @@ const RegisterPage = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const phoneRegex = /^\+?\d{1,13}$/;
 
-    if (!onlyUpperLettersSpaces.test(formData.nombre)) {
-      newErrors.nombre = 'Solo letras mayúsculas y espacios.';
+    if (!onlyUpperLettersSpaces.test(formData.firstname)) {
+      newErrors.firstname = 'Solo letras mayúsculas y espacios.';
     }
 
-    if (!onlyUpperLettersSpaces.test(formData.apellidos)) {
-      newErrors.apellidos = 'Solo letras mayúsculas y espacios.';
+    if (!onlyUpperLettersSpaces.test(formData.lastname)) {
+      newErrors.lastname = 'Solo letras mayúsculas y espacios.';
     }
 
-    if (!onlyUpperLettersSpaces.test(formData.pais)) {
-      newErrors.pais = 'Solo letras mayúsculas y espacios.';
+    if (!onlyUpperLettersSpaces.test(formData.country)) {
+      newErrors.country = 'Solo letras mayúsculas y espacios.';
     }
 
-    if (!emailRegex.test(formData.email)) {
-      newErrors.email = 'Correo inválido.';
+    if (!emailRegex.test(formData.username)) {
+      newErrors.username = 'Correo inválido.';
     }
 
-    if (!phoneRegex.test(formData.telefono)) {
-      newErrors.telefono = 'Solo números y un "+" opcional, máximo 13.';
+    if (!phoneRegex.test(formData.numberPhone)) {
+      newErrors.numberPhone = 'Solo números y un "+" opcional, máximo 13.';
     }
 
     if (formData.password.length < 6) {
@@ -54,17 +55,37 @@ const RegisterPage = () => {
     const { name, value } = e.target;
     let newValue = value;
 
-    if (['nombre', 'apellidos', 'pais'].includes(name)) {
+    if (['firstname', 'lastname', 'country'].includes(name)) {
       newValue = value.toUpperCase();
     }
 
     setFormData({ ...formData, [name]: newValue });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (validate()) {
-      console.log('Formulario válido:', formData);
+      try {
+        const response = await fetch("http://localhost:8080/auth/register", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(formData)
+        });
+
+        if (response.ok) {
+          console.log("Registro exitoso");
+          navigate("/LoginPage");
+        } else {
+          const errorData = await response.json();
+          console.error("Error en el registro:", errorData);
+          alert("Error en el registro: " + (errorData.message || "intenta de nuevo."));
+        }
+      } catch (error) {
+        console.error("Error al conectar con el backend:", error);
+        alert("No se pudo conectar con el servidor.");
+      }
     }
   };
 
@@ -85,13 +106,28 @@ const RegisterPage = () => {
           <p className="text-sm text-gray-500">¡Solo toma unos minutos y es gratis!</p>
 
           <form className="space-y-4" onSubmit={handleSubmit}>
+            {/* Email (como username) */}
+            <div className="relative">
+              <Mail className="absolute left-3 top-2.5 text-gray-400" size={20} />
+              <input
+                name="username"
+                type="email"
+                placeholder="Correo electrónico *"
+                value={formData.username}
+                onChange={handleChange}
+                className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+              />
+              {errors.username && (
+                <p className="text-red-500 text-xs mt-1">{errors.username}</p>
+              )}
+            </div>
+
+            {/* Campos restantes */}
             {[
-              { icon: <User />, name: 'username', type: 'text', placeholder: 'Nombre de usuario *' },
-              { icon: <Mail />, name: 'email', type: 'email', placeholder: 'Correo electrónico *' },
-              { icon: <User />, name: 'nombre', type: 'text', placeholder: 'Nombre *' },
-              { icon: <User />, name: 'apellidos', type: 'text', placeholder: 'Apellidos *' },
-              { icon: <Globe />, name: 'pais', type: 'text', placeholder: 'País de residencia *' },
-              { icon: <Phone />, name: 'telefono', type: 'tel', placeholder: 'Número telefónico *' },
+              { icon: <User />, name: 'firstname', type: 'text', placeholder: 'Nombre *' },
+              { icon: <User />, name: 'lastname', type: 'text', placeholder: 'Apellidos *' },
+              { icon: <Globe />, name: 'country', type: 'text', placeholder: 'País de residencia *' },
+              { icon: <Phone />, name: 'numberPhone', type: 'tel', placeholder: 'Número telefónico *' },
             ].map((field) => (
               <div className="relative" key={field.name}>
                 {React.cloneElement(field.icon, {
@@ -112,7 +148,7 @@ const RegisterPage = () => {
               </div>
             ))}
 
-            {/* Contraseña con ícono de mostrar/ocultar */}
+            {/* Contraseña */}
             <div className="relative">
               <Lock className="absolute left-3 top-2.5 text-gray-400" size={20} />
               <input
