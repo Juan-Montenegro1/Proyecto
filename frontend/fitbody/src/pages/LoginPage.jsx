@@ -1,22 +1,22 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { FaEye, FaEyeSlash, FaGoogle } from 'react-icons/fa';
 import logo from '../assets/logo-fitbody.png';
 import { auth, googleProvider } from '../firebase/firebase';
 import { signInWithPopup } from 'firebase/auth';
 
 const LoginPage = () => {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const validateForm = () => {
     const newErrors = {};
-    if (!email) newErrors.email = 'El correo es requerido';
-    else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = 'Correo inválido';
+    if (!username) newErrors.username = 'El nombre de usuario es requerido';
 
     if (!password) newErrors.password = 'La contraseña es requerida';
     else if (password.length < 6) newErrors.password = 'Mínimo 6 caracteres';
@@ -27,21 +27,41 @@ const LoginPage = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (validateForm()) {
       setLoading(true);
-      setTimeout(() => {
-        console.log('✔ Login correcto:', { email, password });
 
-        if (email === 'gimnasio@fitbody.com') {
-          console.log('Redirigiendo a Panel de Gimnasio...');
+      try {
+        const response = await fetch('http://localhost:8080/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ username, password }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('✔ Login exitoso:', data);
+
+          // Guarda el token si se incluye en la respuesta
+          if (data.token) {
+            localStorage.setItem('token', data.token);
+          }
+          console.log("Redirigiendo al Dashboard...");
+          navigate("/Dashboard");
+
         } else {
-          console.log('Redirigiendo a Panel de Usuario...');
+          const errData = await response.json();
+          setErrors({ general: errData.message || 'Credenciales inválidas' });
         }
-
+      } catch (error) {
+        console.error('Error al conectar con el backend:', error);
+        setErrors({ general: 'Error de red o del servidor' });
+      } finally {
         setLoading(false);
-      }, 2000);
+      }
     }
   };
 
@@ -52,9 +72,9 @@ const LoginPage = () => {
       console.log('Google login:', user);
 
       if (user.email === 'gimnasio@fitbody.com') {
-        console.log('Redirigiendo a Panel de Gimnasio (Google)...');
+        navigate('/panel-gimnasio');
       } else {
-        console.log('Redirigiendo a Panel de Usuario (Google)...');
+        navigate('/panel-usuario');
       }
     } catch (error) {
       console.error('Error con Google login:', error.message);
@@ -69,16 +89,16 @@ const LoginPage = () => {
       </h2>
 
       <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-5">
-        {/* Email */}
+        {/* Username */}
         <div>
           <input
-            type="email"
-            placeholder="Correo electrónico"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className={`w-full px-4 py-3 rounded-lg bg-white text-[#232323] placeholder-gray-500 font-[League Spartan] transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#FF7200] ${errors.email && 'border border-red-500'}`}
+            type="text"
+            placeholder="Nombre de usuario"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            className={`w-full px-4 py-3 rounded-lg bg-white text-[#232323] placeholder-gray-500 font-[League Spartan] transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#FF7200] ${errors.username && 'border border-red-500'}`}
           />
-          {errors.email && <p className="text-red-400 text-sm mt-1">{errors.email}</p>}
+          {errors.username && <p className="text-red-400 text-sm mt-1">{errors.username}</p>}
         </div>
 
         {/* Contraseña */}
@@ -114,6 +134,9 @@ const LoginPage = () => {
           </label>
         </div>
         {errors.terms && <p className="text-red-400 text-sm -mt-2">{errors.terms}</p>}
+
+        {/* Error general */}
+        {errors.general && <p className="text-red-500 text-sm">{errors.general}</p>}
 
         {/* Botón ingresar */}
         <button
