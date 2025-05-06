@@ -40,6 +40,7 @@ public class AuthServices {
             .firstname(request.getFirstname())
             .lastname(request.getLastname())
             .country(request.getCountry())
+            .numberPhone(request.getNumberPhone())
             .role(Role.USER)
             .build();
 

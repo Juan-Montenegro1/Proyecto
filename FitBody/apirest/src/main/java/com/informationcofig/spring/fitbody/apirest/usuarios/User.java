@@ -40,6 +40,7 @@ public class User implements UserDetails{
     String username;
     String password;
     String country;
+    String numberPhone;
     @Enumerated(EnumType.STRING)
     Role role;
 
