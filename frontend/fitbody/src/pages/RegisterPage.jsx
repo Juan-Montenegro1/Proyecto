@@ -17,39 +17,50 @@ const RegisterPage = () => {
   const navigate = useNavigate();
 
   const validate = () => {
-    const newErrors = {};
+  const newErrors = {};
 
-    const onlyUpperLettersSpaces = /^[A-Z\s]+$/;
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const phoneRegex = /^\+?\d{1,13}$/;
+  const onlyUpperLettersSpaces = /^[A-Z\s]+$/;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const phoneRegex = /^\+?\d{1,13}$/;
 
-    if (!onlyUpperLettersSpaces.test(formData.firstname)) {
-      newErrors.firstname = 'Solo letras mayúsculas y espacios.';
-    }
+  // Normalizar el correo electrónico antes de validarlo
+  const normalizedEmail = formData.username
+    .toLowerCase()
+    .normalize('NFD') // descompone caracteres con tilde
+    .replace(/[\u0300-\u036f]/g, '') // elimina los acentos
+    .replace(/\s+/g, ''); // elimina espacios
 
-    if (!onlyUpperLettersSpaces.test(formData.lastname)) {
-      newErrors.lastname = 'Solo letras mayúsculas y espacios.';
-    }
+  // Guardar el correo normalizado de vuelta si lo deseas:
+  formData.username = normalizedEmail;
 
-    if (!onlyUpperLettersSpaces.test(formData.country)) {
-      newErrors.country = 'Solo letras mayúsculas y espacios.';
-    }
+  if (!onlyUpperLettersSpaces.test(formData.firstname)) {
+    newErrors.firstname = 'Solo letras mayúsculas y espacios.';
+  }
 
-    if (!emailRegex.test(formData.username)) {
-      newErrors.username = 'Correo inválido.';
-    }
+  if (!onlyUpperLettersSpaces.test(formData.lastname)) {
+    newErrors.lastname = 'Solo letras mayúsculas y espacios.';
+  }
 
-    if (!phoneRegex.test(formData.numberPhone)) {
-      newErrors.numberPhone = 'Solo números y un "+" opcional, máximo 13.';
-    }
+  if (!onlyUpperLettersSpaces.test(formData.country)) {
+    newErrors.country = 'Solo letras mayúsculas y espacios.';
+  }
 
-    if (formData.password.length < 6) {
-      newErrors.password = 'Mínimo 6 caracteres.';
-    }
+  if (!emailRegex.test(normalizedEmail)) {
+    newErrors.username = 'Correo inválido.';
+  }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  if (!phoneRegex.test(formData.numberPhone)) {
+    newErrors.numberPhone = 'Solo números y un "+" opcional, máximo 13.';
+  }
+
+  if (formData.password.length < 6) {
+    newErrors.password = 'Mínimo 6 caracteres.';
+  }
+
+  setErrors(newErrors);
+  return Object.keys(newErrors).length === 0;
+};
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -76,7 +87,7 @@ const RegisterPage = () => {
 
         if (response.ok) {
           console.log("Registro exitoso");
-          navigate("/LoginPage");
+          navigate("/Login");
         } else {
           const errorData = await response.json();
           console.error("Error en el registro:", errorData);

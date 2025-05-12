@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { db, auth } from '../firebase/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 
 const ClientProfileForm = () => {
@@ -17,7 +15,7 @@ const ClientProfileForm = () => {
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     if (name === 'foto' && files.length > 0) {
-      setFormData({ ...formData, [name]: URL.createObjectURL(files[0]) }); // temporal para vista previa
+      setFormData({ ...formData, [name]: files[0] });
     } else {
       setFormData({ ...formData, [name]: value });
     }
@@ -25,20 +23,27 @@ const ClientProfileForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const user = auth.currentUser;
 
-    if (user) {
-      try {
-        const userRef = doc(db, 'usuarios', user.uid);
-        await updateDoc(userRef, {
-          ...formData,
-          perfilCompleto: true,
-        });
+    const data = new FormData();
+    Object.entries(formData).forEach(([key, value]) => {
+      data.append(key, value);
+    });
+    data.append('perfilCompleto', true);
 
+    try {
+      const response = await fetch('http://localhost:3000/api/cliente/perfil', {
+        method: 'POST',
+        body: data,
+        credentials: 'include',
+      });
+
+      if (response.ok) {
         navigate('/dashboard');
-      } catch (error) {
-        console.error('Error al guardar perfil:', error);
+      } else {
+        console.error('Error al guardar perfil de cliente');
       }
+    } catch (error) {
+      console.error('Error de red:', error);
     }
   };
 
